@@ -4,61 +4,80 @@ import modelo.ConexionBD;
 import modelo.entidades.Inspeccion;
 
 import java.sql.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class InspeccionDAO {
 
     private static final String OWNER = "ADMINICA";
+    private static final String TABLE = OWNER + ".INSPECCION";
+    private static final String LOTE_TABLE = OWNER + ".LOTE";
 
-    // =============== INSERT ==================
-    public void insertarInspeccion(Inspeccion i) throws Exception {
+    // =========================================================
+    //  INSERT (usando procedure REGISTRAR_INSPECCION)
+    // =========================================================
 
-        String sql =
-                "INSERT INTO " + OWNER + ".INSPECCION (" +
-                "    ID_INSPECCION, " +
-                "    ID_LOTE, " +
-                "    ID_TECNICO, " +
-                "    FECHA_INSPECCION, " +
-                "    TOTAL_PLANTAS, " +
-                "    PLANTAS_AFECTADAS, " +
-                "    ESTADO_FENOLOGICO, " +
-                "    PORCENTAJE_INFESTACION, " +
-                "    OBSERVACIONES" +
-                ") VALUES (" +
-                "    'INS-' || " + OWNER + ".SEQ_INSPECCION.NEXTVAL, " +
-                "    ?, ?, SYSDATE, ?, ?, ?, ?, ?" +
-                ")";
+    /**
+     * Inserta una inspección usando la conexión indicada.
+     * Se usa cuando quieres incluir la inserción dentro de una transacción
+     * más grande (por ejemplo, junto con marcar la visita realizada).
+     */
+    public void registrarInspeccion(String idLote,
+                                    String idTecnico,
+                                    int totalPlantas,
+                                    int afectadas,
+                                    String fenologico,
+                                    double porcentaje,
+                                    String obs,
+                                    Connection cn) throws SQLException {
 
-        try (Connection cn = ConexionBD.getConexionActual();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
-
-            ps.setString(1, i.getIdLote());
-            ps.setString(2, i.getIdTecnico());
-            ps.setInt(3, i.getTotalPlantas());
-            ps.setInt(4, i.getPlantasAfectadas());
-            ps.setString(5, i.getEstadoFenologico());
-            ps.setDouble(6, i.getPorcentajeInfestacion());
-            ps.setString(7, i.getObservaciones());
-
-            ps.executeUpdate();
+        try (CallableStatement cs =
+         cn.prepareCall("{ call ADMINICA.registrar_inspeccion(?,?,?,?,?,?,?) }")) {
+            cs.setString(1, idLote);
+            cs.setString(2, idTecnico);
+            cs.setInt(3, totalPlantas);
+            cs.setInt(4, afectadas);
+            cs.setString(5, fenologico);
+            cs.setDouble(6, porcentaje);
+            cs.setString(7, obs);
+            cs.execute();
         }
     }
 
-    // =============== UPDATE ==================
+    /**
+     * Inserta una inspección abriendo y cerrando su propia conexión.
+     * Útil si no necesitas manejar transacciones manualmente.
+     */
+    public void registrarInspeccion(String idLote,
+                                    String idTecnico,
+                                    int totalPlantas,
+                                    int afectadas,
+                                    String fenologico,
+                                    double porcentaje,
+                                    String obs) throws SQLException {
+
+        try (Connection cn = ConexionBD.getConexionActual()) {
+            registrarInspeccion(idLote, idTecnico, totalPlantas,
+                    afectadas, fenologico, porcentaje, obs, cn);
+        }
+    }
+
+    // =========================================================
+    //  UPDATE
+    // =========================================================
+
     public void actualizarInspeccion(Inspeccion i) throws Exception {
 
         String sql =
-                "UPDATE " + OWNER + ".INSPECCION SET " +
-                "    ID_LOTE               = ?, " +
-                "    ID_TECNICO            = ?, " +
-                "    FECHA_INSPECCION      = ?, " +
-                "    TOTAL_PLANTAS         = ?, " +
-                "    PLANTAS_AFECTADAS     = ?, " +
-                "    ESTADO_FENOLOGICO     = ?, " +
-                "    PORCENTAJE_INFESTACION= ?, " +
-                "    OBSERVACIONES         = ? " +
+                "UPDATE " + TABLE + " SET " +
+                "    ID_LOTE                = ?, " +
+                "    ID_TECNICO             = ?, " +
+                "    FECHA_INSPECCION       = ?, " +
+                "    TOTAL_PLANTAS          = ?, " +
+                "    PLANTAS_AFECTADAS      = ?, " +
+                "    ESTADO_FENOLOGICO      = ?, " +
+                "    PORCENTAJE_INFESTACION = ?, " +
+                "    OBSERVACIONES          = ? " +
                 "WHERE ID_INSPECCION = ?";
 
         try (Connection cn = ConexionBD.getConexionActual();
@@ -78,13 +97,16 @@ public class InspeccionDAO {
         }
     }
 
-    // =============== LISTAS ==================
+    // =========================================================
+    //  LISTADOS
+    // =========================================================
+
     public List<Inspeccion> listarTodas() throws Exception {
         String sql =
                 "SELECT ID_INSPECCION, ID_LOTE, ID_TECNICO, FECHA_INSPECCION, " +
                 "       TOTAL_PLANTAS, PLANTAS_AFECTADAS, ESTADO_FENOLOGICO, " +
                 "       PORCENTAJE_INFESTACION, OBSERVACIONES " +
-                "FROM " + OWNER + ".INSPECCION " +
+                "FROM " + TABLE + " " +
                 "ORDER BY FECHA_INSPECCION DESC";
 
         List<Inspeccion> lista = new ArrayList<>();
@@ -105,7 +127,7 @@ public class InspeccionDAO {
                 "SELECT ID_INSPECCION, ID_LOTE, ID_TECNICO, FECHA_INSPECCION, " +
                 "       TOTAL_PLANTAS, PLANTAS_AFECTADAS, ESTADO_FENOLOGICO, " +
                 "       PORCENTAJE_INFESTACION, OBSERVACIONES " +
-                "FROM " + OWNER + ".INSPECCION " +
+                "FROM " + TABLE + " " +
                 "WHERE ID_TECNICO = ? " +
                 "ORDER BY FECHA_INSPECCION DESC";
 
@@ -130,8 +152,8 @@ public class InspeccionDAO {
                 "SELECT i.ID_INSPECCION, i.ID_LOTE, i.ID_TECNICO, i.FECHA_INSPECCION, " +
                 "       i.TOTAL_PLANTAS, i.PLANTAS_AFECTADAS, i.ESTADO_FENOLOGICO, " +
                 "       i.PORCENTAJE_INFESTACION, i.OBSERVACIONES " +
-                "FROM " + OWNER + ".INSPECCION i " +
-                "JOIN " + OWNER + ".LOTE l ON l.ID_LOTE = i.ID_LOTE " +
+                "FROM " + TABLE + " i " +
+                "JOIN " + LOTE_TABLE + " l ON l.ID_LOTE = i.ID_LOTE " +
                 "WHERE l.ID_PRODUCTOR = ? " +
                 "ORDER BY i.FECHA_INSPECCION DESC";
 
@@ -151,7 +173,10 @@ public class InspeccionDAO {
         return lista;
     }
 
-    // =============== MAPEO ==================
+    // =========================================================
+    //  MAPEO
+    // =========================================================
+
     private Inspeccion mapRow(ResultSet rs) throws Exception {
         Inspeccion i = new Inspeccion();
         i.setIdInspeccion(rs.getString("ID_INSPECCION"));
@@ -159,7 +184,9 @@ public class InspeccionDAO {
         i.setIdTecnico(rs.getString("ID_TECNICO"));
 
         Date f = rs.getDate("FECHA_INSPECCION");
-        if (f != null) i.setFechaInspeccion(f.toLocalDate());
+        if (f != null) {
+            i.setFechaInspeccion(f.toLocalDate());
+        }
 
         i.setTotalPlantas(rs.getInt("TOTAL_PLANTAS"));
         i.setPlantasAfectadas(rs.getInt("PLANTAS_AFECTADAS"));

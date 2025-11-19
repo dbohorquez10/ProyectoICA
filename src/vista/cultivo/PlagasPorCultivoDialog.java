@@ -32,7 +32,7 @@ public class PlagasPorCultivoDialog extends JDialog {
                                   String nombreCultivo) {
         super(owner,
               "Plagas que afectan a " + nombreCultivo,
-              ModalityType.APPLICATION_MODAL);
+              Dialog.ModalityType.APPLICATION_MODAL);
         this.idCultivo = idCultivo;
         this.nombreCultivo = nombreCultivo;
         setSize(700, 420);

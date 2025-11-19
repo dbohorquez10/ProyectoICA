@@ -55,6 +55,7 @@ public class VisitaForm extends JDialog {
     private DefaultTableModel tableModel;
 
     private final VisitaController controller = new VisitaController();
+    private JButton btnExportarVisitas;
 
     private boolean     modoProductor      = false;
     private RolUsuario  rolActual;

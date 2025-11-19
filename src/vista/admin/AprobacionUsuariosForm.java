@@ -16,6 +16,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
+import modelo.reportes.ReporteUtil;
+import java.io.File;
 
 public class AprobacionUsuariosForm extends JDialog {
 
@@ -40,29 +42,35 @@ public class AprobacionUsuariosForm extends JDialog {
     }
 
     private void initUI() {
-        JPanel root = new JPanel(new BorderLayout());
-        root.setBorder(new EmptyBorder(12, 12, 12, 12));
+    JPanel root = new JPanel(new BorderLayout());
+    root.setBorder(new EmptyBorder(12, 12, 12, 12));
 
-        JPanel header = UIStyle.sectionHeader(
-                "Aprobación de usuarios",
-                "Aprobar técnicos ICA y activar/desactivar productores."
-        );
+    JPanel header = UIStyle.sectionHeader(
+            "Aprobación de usuarios",
+            "Aprobar técnicos ICA y activar/desactivar productores."
+    );
 
-        JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("Técnicos ICA", crearPanelTecnicos());
-        tabs.addTab("Productores", crearPanelProductores());
+    JTabbedPane tabs = new JTabbedPane();
+    tabs.addTab("Técnicos ICA", crearPanelTecnicos());
+    tabs.addTab("Productores", crearPanelProductores());
 
-        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton btnCerrar = UIStyle.ghostButton("Cerrar");
-        btnCerrar.addActionListener(e -> dispose());
-        footer.add(btnCerrar);
+    JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-        root.add(header, BorderLayout.NORTH);
-        root.add(tabs, BorderLayout.CENTER);
-        root.add(footer, BorderLayout.SOUTH);
+    // 👉 NUEVO: botón exportar usuarios
+    JButton btnExportar = UIStyle.primaryButton("Exportar usuarios PDF");
+    btnExportar.addActionListener(e -> exportarUsuariosPdf());
+    footer.add(btnExportar);
 
-        setContentPane(root);
-    }
+    JButton btnCerrar = UIStyle.ghostButton("Cerrar");
+    btnCerrar.addActionListener(e -> dispose());
+    footer.add(btnCerrar);
+
+    root.add(header, BorderLayout.NORTH);
+    root.add(tabs, BorderLayout.CENTER);
+    root.add(footer, BorderLayout.SOUTH);
+
+    setContentPane(root);
+}
 
     // =================== PANEL TÉCNICOS ===================
 
@@ -266,4 +274,30 @@ public class AprobacionUsuariosForm extends JDialog {
                     JOptionPane.ERROR_MESSAGE);
         }
     }
+    // =================== REPORTE USUARIOS ===================
+
+    private void exportarUsuariosPdf() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Guardar informe de usuarios");
+        chooser.setSelectedFile(new File("usuarios_ica.pdf"));
+
+        int result = chooser.showSaveDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) return;
+
+        File destino = chooser.getSelectedFile();
+        try {
+            ReporteUtil.exportarUsuariosPdf(destino.getAbsolutePath());
+            JOptionPane.showMessageDialog(this,
+                    "Informe de usuarios generado correctamente:\n" + destino.getAbsolutePath(),
+                    "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error al generar el informe de usuarios:\n" + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+
 }

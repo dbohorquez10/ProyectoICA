@@ -1,0 +1,90 @@
+<!-- Created with Jaspersoft Studio version 7.0.3.final using JasperReports Library version 7.0.3-41034ca841d452f3305ba55b9042260aaa1ab5dd  -->
+<jasperReport name="usuarios" language="java" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="11111111-1111-1111-1111-111111111111">
+	<parameter name="LOGO_ICA" class="java.lang.String"/>
+	<query language="SQL"><![CDATA[SELECT
+            TIPO,
+            ID,
+            IDENTIFICACION,
+            NOMBRE_COMPLETO,
+            DIRECCION,
+            TELEFONO,
+            CORREO
+        FROM (
+            SELECT
+                'PRODUCTOR'              AS TIPO,
+                p.ID_PRODUCTOR           AS ID,
+                p.IDENTIFICACION         AS IDENTIFICACION,
+                p.NOMBRE_COMPLETO        AS NOMBRE_COMPLETO,
+                p.DIRECCION              AS DIRECCION,
+                p.TELEFONO               AS TELEFONO,
+                p.CORREO                 AS CORREO
+            FROM ADMINICA.PRODUCTOR p
+
+            UNION ALL
+
+            SELECT
+                'TECNICO'                AS TIPO,
+                t.ID_TECNICO             AS ID,
+                t.IDENTIFICACION         AS IDENTIFICACION,
+                t.NOMBRE_COMPLETO        AS NOMBRE_COMPLETO,
+                t.DIRECCION              AS DIRECCION,
+                t.TELEFONO               AS TELEFONO,
+                t.CORREO                 AS CORREO
+            FROM ADMINICA.TECNICO t
+        )
+        ORDER BY TIPO, NOMBRE_COMPLETO]]></query>
+	<field name="TIPO" class="java.lang.String"/>
+	<field name="ID" class="java.lang.String"/>
+	<field name="IDENTIFICACION" class="java.lang.String"/>
+	<field name="NOMBRE_COMPLETO" class="java.lang.String"/>
+	<field name="DIRECCION" class="java.lang.String"/>
+	<field name="TELEFONO" class="java.lang.String"/>
+	<field name="CORREO" class="java.lang.String"/>
+	<title height="60" splitType="Stretch">
+		<element kind="staticText" uuid="11111111-1111-1111-1111-111111111112" x="0" y="10" width="555" height="24" fontSize="16.0" bold="true" hTextAlign="Center">
+			<text><![CDATA[Listado de usuarios (productores y técnicos)]]></text>
+		</element>
+	</title>
+	<columnHeader height="20" splitType="Stretch">
+		<element kind="staticText" uuid="11111111-1111-1111-1111-111111111113" x="0" y="0" width="60" height="20" bold="true">
+			<text><![CDATA[Tipo]]></text>
+		</element>
+		<element kind="staticText" uuid="11111111-1111-1111-1111-111111111114" x="60" y="0" width="70" height="20" bold="true">
+			<text><![CDATA[ID]]></text>
+		</element>
+		<element kind="staticText" uuid="11111111-1111-1111-1111-111111111115" x="130" y="0" width="80" height="20" bold="true">
+			<text><![CDATA[Documento]]></text>
+		</element>
+		<element kind="staticText" uuid="11111111-1111-1111-1111-111111111116" x="210" y="0" width="150" height="20" bold="true">
+			<text><![CDATA[Nombre completo]]></text>
+		</element>
+		<element kind="staticText" uuid="11111111-1111-1111-1111-111111111117" x="360" y="0" width="140" height="20" bold="true">
+			<text><![CDATA[Dirección]]></text>
+		</element>
+		<element kind="staticText" uuid="11111111-1111-1111-1111-111111111118" x="500" y="0" width="55" height="20" bold="true">
+			<text><![CDATA[Tel]]></text>
+		</element>
+	</columnHeader>
+	<detail>
+		<band height="18" splitType="Stretch">
+			<element kind="textField" uuid="11111111-1111-1111-1111-111111111119" x="0" y="0" width="60" height="18">
+				<expression><![CDATA[$F{TIPO}]]></expression>
+			</element>
+			<element kind="textField" uuid="11111111-1111-1111-1111-11111111111a" x="60" y="0" width="70" height="18">
+				<expression><![CDATA[$F{ID}]]></expression>
+			</element>
+			<element kind="textField" uuid="11111111-1111-1111-1111-11111111111b" x="130" y="0" width="80" height="18">
+				<expression><![CDATA[$F{IDENTIFICACION}]]></expression>
+			</element>
+			<element kind="textField" uuid="11111111-1111-1111-1111-11111111111c" x="210" y="0" width="150" height="18">
+				<expression><![CDATA[$F{NOMBRE_COMPLETO}]]></expression>
+			</element>
+			<element kind="textField" uuid="11111111-1111-1111-1111-11111111111d" x="360" y="0" width="140" height="18">
+				<expression><![CDATA[$F{DIRECCION}]]></expression>
+			</element>
+			<element kind="textField" uuid="11111111-1111-1111-1111-11111111111e" x="500" y="0" width="55" height="18">
+				<expression><![CDATA[$F{TELEFONO}]]></expression>
+			</element>
+		</band>
+	</detail>
+</jasperReport>

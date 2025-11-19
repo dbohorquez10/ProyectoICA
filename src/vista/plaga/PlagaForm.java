@@ -1,8 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-// archivo: src/vista/plaga/PlagaForm.java
 package vista.plaga;
 
 import controlador.PlagaController;
@@ -16,6 +11,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
+import modelo.reportes.ReporteUtil;
+import java.io.File;
 
 /**
  * Gestión de plagas:
@@ -130,6 +127,10 @@ public class PlagaForm extends JDialog {
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         footer.setOpaque(false);
 
+        // NUEVO: botón exportar plagas
+        JButton btnExportar = UIStyle.primaryButton("Exportar plagas PDF");
+        btnExportar.addActionListener(e -> exportarPlagasPdf());
+
         JButton btnCerrar = UIStyle.backButton();
         btnCerrar.setText("Cerrar");
         btnCerrar.addActionListener(e -> dispose());
@@ -148,11 +149,14 @@ public class PlagaForm extends JDialog {
             btnGuardar.addActionListener(e -> guardar());
 
             footer.add(btnRelacion);
+            footer.add(btnExportar);
             footer.add(btnNuevo);
             footer.add(btnEliminar);
             footer.add(btnCerrar);
             footer.add(btnGuardar);
         } else {
+            // Técnico / productor: solo ver + exportar + cerrar
+            footer.add(btnExportar);
             footer.add(btnCerrar);
         }
 
@@ -287,5 +291,31 @@ public class PlagaForm extends JDialog {
         String idPlaga = (String) tableModel.getValueAt(row, 0);
         CultivosPlagaDialog dlg = new CultivosPlagaDialog(this, idPlaga);
         dlg.setVisible(true);
+    }
+
+    // ================== REPORTE PLAGAS ==================
+
+    private void exportarPlagasPdf() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Guardar informe de plagas");
+        chooser.setSelectedFile(new File("plagas_ica.pdf"));
+
+        int result = chooser.showSaveDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) return;
+
+        File destino = chooser.getSelectedFile();
+        try {
+            ReporteUtil.exportarPlagasPdf(destino.getAbsolutePath());
+            JOptionPane.showMessageDialog(this,
+                    "Informe de plagas generado correctamente:\n" + destino.getAbsolutePath(),
+                    "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error al generar el informe de plagas:\n" + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
     }
 }

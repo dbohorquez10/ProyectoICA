@@ -15,6 +15,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
+import modelo.reportes.ReporteUtil;
+import java.io.File;
 
 /**
  * Gestión de cultivos.
@@ -137,38 +139,43 @@ public class CultivoForm extends JDialog {
 
         // ---------- Botones ----------
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        footer.setOpaque(false);
+footer.setOpaque(false);
 
-        // Botón para ver plagas (todos los roles)
-        JButton btnPlagas = UIStyle.ghostButton("Ver plagas");
-        btnPlagas.addActionListener(e -> verPlagasDelCultivo());
+// Botón para ver plagas (todos los roles)
+JButton btnPlagas = UIStyle.ghostButton("Ver plagas");
+btnPlagas.addActionListener(e -> verPlagasDelCultivo());
 
-        // Botón Cerrar siempre
-        JButton btnCerrar = UIStyle.backButton();
-        btnCerrar.setText("Cerrar");
-        btnCerrar.addActionListener(e -> dispose());
+// Botón Cerrar siempre
+JButton btnCerrar = UIStyle.backButton();
+btnCerrar.setText("Cerrar");
+btnCerrar.addActionListener(e -> dispose());
 
-        if (!soloLectura) {
-            // Sólo ADMIN ve y usa estos botones
-            JButton btnNuevo = UIStyle.ghostButton("Nuevo");
-            btnNuevo.addActionListener(e -> limpiarFormulario());
+// Botón reporte (todos los roles)
+JButton btnReporte = UIStyle.primaryButton("Exportar reporte PDF");
+btnReporte.addActionListener(e -> exportarReporteCultivos());
 
-            JButton btnEliminar = UIStyle.dangerButton("Eliminar");
-            btnEliminar.addActionListener(e -> eliminarSeleccionado());
+if (!soloLectura) {
+    JButton btnNuevo = UIStyle.ghostButton("Nuevo");
+    btnNuevo.addActionListener(e -> limpiarFormulario());
 
-            JButton btnGuardar = UIStyle.primaryButton("Guardar cultivo");
-            btnGuardar.addActionListener(e -> guardar());
+    JButton btnEliminar = UIStyle.dangerButton("Eliminar");
+    btnEliminar.addActionListener(e -> eliminarSeleccionado());
 
-            footer.add(btnPlagas);
-            footer.add(btnNuevo);
-            footer.add(btnEliminar);
-            footer.add(btnCerrar);
-            footer.add(btnGuardar);
-        } else {
-            // PRODUCTOR y TECNICO: ver plagas + cerrar
-            footer.add(btnPlagas);
-            footer.add(btnCerrar);
-        }
+    JButton btnGuardar = UIStyle.primaryButton("Guardar cultivo");
+    btnGuardar.addActionListener(e -> guardar());
+
+    footer.add(btnPlagas);
+    footer.add(btnNuevo);
+    footer.add(btnEliminar);
+    footer.add(btnCerrar);
+    footer.add(btnGuardar);
+    footer.add(btnReporte);
+} else {
+    footer.add(btnPlagas);
+    footer.add(btnCerrar);
+    footer.add(btnReporte);
+}
+
 
         root.add(header, BorderLayout.NORTH);
         root.add(center, BorderLayout.CENTER);
@@ -342,4 +349,30 @@ public class CultivoForm extends JDialog {
                 new PlagasPorCultivoDialog(this, idCultivo, nombre);
         dlg.setVisible(true);
     }
+private void exportarReporteCultivos() {
+    JFileChooser chooser = new JFileChooser();
+    chooser.setDialogTitle("Guardar reporte de cultivos");
+    chooser.setSelectedFile(new File("reporte_cultivos_plagas.pdf"));
+
+    int result = chooser.showSaveDialog(this);
+    if (result != JFileChooser.APPROVE_OPTION) {
+        return;
+    }
+
+    File destino = chooser.getSelectedFile();
+
+    try {
+        ReporteUtil.exportarCultivosPdf(destino.getAbsolutePath());
+        JOptionPane.showMessageDialog(this,
+                "Reporte generado correctamente:\n" + destino.getAbsolutePath(),
+                "Éxito",
+                JOptionPane.INFORMATION_MESSAGE);
+    } catch (Exception ex) {
+        JOptionPane.showMessageDialog(this,
+                "Error al generar el reporte:\n" + ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        ex.printStackTrace();
+    }
+}
 }

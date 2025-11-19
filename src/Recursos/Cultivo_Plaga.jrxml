@@ -1,0 +1,110 @@
+<!-- Created with Jaspersoft Studio version 7.0.3.final using JasperReports Library version 7.0.3-41034ca841d452f3305ba55b9042260aaa1ab5dd  -->
+<jasperReport name="cultivos_plagas" language="java" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="c2222222-3333-4444-5555-666666666666">
+	<style name="Title" forecolor="#004D40" fontName="SansSerif" fontSize="18.0" bold="true"/>
+	<style name="SectionHeader" mode="Opaque" forecolor="#FFFFFF" backcolor="#00695C" fontName="SansSerif" fontSize="12.0" bold="true"/>
+	<style name="Label" forecolor="#2E4A4A" fontName="SansSerif" fontSize="9.0" bold="true"/>
+	<style name="Field" forecolor="#333333" fontName="SansSerif" fontSize="9.0"/>
+	<style name="FooterText" forecolor="#666666" fontName="SansSerif" fontSize="8.0"/>
+	<parameter name="P_ID_CULTIVO" forPrompting="false" class="java.lang.String"/>
+	<parameter name="LOGO_ICA" class="java.lang.String"/>
+	<query language="sql"><![CDATA[
+SELECT
+    c.ID_CULTIVO,
+    c.NOMBRE_COMUN       AS CULTIVO_NOMBRE_COMUN,
+    c.NOMBRE_CIENTIFICO  AS CULTIVO_NOMBRE_CIENTIFICO,
+    c.CICLO_CULTIVO,
+    p.ID_PLAGA,
+    p.NOMBRE_COMUN       AS PLAGA_NOMBRE_COMUN,
+    p.NOMBRE_CIENTIFICO  AS PLAGA_NOMBRE_CIENTIFICO,
+    p.TIPO_PLAGA
+FROM ADMINICA.CULTIVO c
+LEFT JOIN ADMINICA.CULTIVO_PLAGA cp
+       ON cp.ID_CULTIVO = c.ID_CULTIVO
+LEFT JOIN ADMINICA.PLAGA p
+       ON p.ID_PLAGA = cp.ID_PLAGA
+ORDER BY c.NOMBRE_COMUN, p.NOMBRE_COMUN
+    ]]></query>
+	<field name="ID_CULTIVO" class="java.lang.String"/>
+	<field name="CULTIVO_NOMBRE_COMUN" class="java.lang.String"/>
+	<field name="CULTIVO_NOMBRE_CIENTIFICO" class="java.lang.String"/>
+	<field name="CICLO_CULTIVO" class="java.lang.String"/>
+	<field name="ID_PLAGA" class="java.lang.String"/>
+	<field name="PLAGA_NOMBRE_COMUN" class="java.lang.String"/>
+	<field name="PLAGA_NOMBRE_CIENTIFICO" class="java.lang.String"/>
+	<field name="TIPO_PLAGA" class="java.lang.String"/>
+	<group name="GRP_CULTIVO">
+		<expression><![CDATA[$F{ID_CULTIVO}]]></expression>
+		<groupHeader>
+			<band height="90">
+				<element kind="staticText" uuid="fa1ecab8-db3d-45ff-ac9f-e3ad4e1542d8" x="0" y="0" width="555" height="16" style="SectionHeader">
+					<text><![CDATA[Cultivo]]></text>
+				</element>
+				<element kind="staticText" uuid="e82ca93a-036c-404a-95d4-f248737cc3f8" x="0" y="20" width="100" height="14" style="Label">
+					<text><![CDATA[ID cultivo:]]></text>
+				</element>
+				<element kind="textField" uuid="9addc881-78a2-48ba-bd11-a171ea4aad44" x="100" y="20" width="200" height="14" style="Field">
+					<expression><![CDATA[$F{ID_CULTIVO}]]></expression>
+				</element>
+				<element kind="staticText" uuid="101066f9-aae3-43c6-b3d6-b1254dd945d2" x="0" y="36" width="100" height="14" style="Label">
+					<text><![CDATA[Nombre común:]]></text>
+				</element>
+				<element kind="textField" uuid="e0d71db7-28b4-4024-90d6-e41e7963da58" x="100" y="36" width="300" height="14" style="Field">
+					<expression><![CDATA[$F{CULTIVO_NOMBRE_COMUN}]]></expression>
+				</element>
+				<element kind="staticText" uuid="6e2d1a3a-cde1-4cea-b3fe-304ef48b96aa" x="0" y="52" width="100" height="14" style="Label">
+					<text><![CDATA[Nombre científico:]]></text>
+				</element>
+				<element kind="textField" uuid="1fbfae16-809d-430b-87ba-e2d91f1f39ea" x="100" y="52" width="400" height="14" style="Field">
+					<expression><![CDATA[$F{CULTIVO_NOMBRE_CIENTIFICO}]]></expression>
+				</element>
+				<element kind="staticText" uuid="bf005151-0beb-4e02-ad22-6a6ac25ed872" x="0" y="68" width="100" height="14" style="Label">
+					<text><![CDATA[Ciclo de cultivo:]]></text>
+				</element>
+				<element kind="textField" uuid="964f4402-d5a2-4994-b4f2-81f198b7dcf4" x="100" y="68" width="300" height="14" style="Field">
+					<expression><![CDATA[$F{CICLO_CULTIVO}]]></expression>
+				</element>
+			</band>
+		</groupHeader>
+	</group>
+	<title height="65">
+		<element kind="image" uuid="79f00cc4-9dbd-4887-987b-f87bd6b0a486" x="0" y="0" width="60" height="60">
+			<expression><![CDATA[$P{LOGO_ICA}]]></expression>
+		</element>
+		<element kind="staticText" uuid="84b486cd-f53b-46bb-ad13-d04b1c30aecc" x="70" y="0" width="485" height="25" style="Title">
+			<text><![CDATA[REPORTE DE CULTIVOS Y PLAGAS ASOCIADAS]]></text>
+		</element>
+		<element kind="staticText" uuid="d69e225d-dcfd-488a-a480-ec2a2ad4688f" x="70" y="28" width="485" height="15">
+			<text><![CDATA[Sistema ICA-FITO — Relación cultivo–plaga]]></text>
+		</element>
+		<element kind="line" uuid="7dfc59e5-44b2-45ea-807f-a60d9b6ec5c1" x="0" y="50" width="555" height="1" forecolor="#00695C"/>
+	</title>
+	<columnHeader height="18">
+		<element kind="staticText" uuid="e54bd5cc-f55b-4bbc-a230-db6a82d8cf15" x="0" y="0" width="200" height="16" style="Label">
+			<text><![CDATA[Plaga (nombre común)]]></text>
+		</element>
+		<element kind="staticText" uuid="db8bc899-f79a-4e82-9b5f-b2b4f6804c00" x="200" y="0" width="230" height="16" style="Label">
+			<text><![CDATA[Nombre científico]]></text>
+		</element>
+		<element kind="staticText" uuid="1cfde920-eeb2-4bfd-b4f6-70a49434ee0d" x="430" y="0" width="125" height="16" style="Label">
+			<text><![CDATA[Tipo de plaga]]></text>
+		</element>
+	</columnHeader>
+	<detail>
+		<band height="16">
+			<element kind="textField" uuid="d43c61ed-5b99-4c41-8150-e313fb86d015" x="0" y="0" width="200" height="14" style="Field">
+				<expression><![CDATA[$F{PLAGA_NOMBRE_COMUN}]]></expression>
+			</element>
+			<element kind="textField" uuid="3df305a5-341d-45d5-bfa9-616757ddb2b7" x="200" y="0" width="230" height="14" style="Field">
+				<expression><![CDATA[$F{PLAGA_NOMBRE_CIENTIFICO}]]></expression>
+			</element>
+			<element kind="textField" uuid="afabef9c-d38d-4ea0-b499-a8e550a7a91d" x="430" y="0" width="125" height="14" style="Field">
+				<expression><![CDATA[$F{TIPO_PLAGA}]]></expression>
+			</element>
+		</band>
+	</detail>
+	<pageFooter height="20">
+		<element kind="textField" uuid="c45136dc-453c-4d75-98e6-ad7371f382ab" x="0" y="0" width="555" height="15" style="FooterText">
+			<expression><![CDATA["Página " + $V{PAGE_NUMBER}]]></expression>
+		</element>
+	</pageFooter>
+</jasperReport>

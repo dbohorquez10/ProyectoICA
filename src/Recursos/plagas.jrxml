@@ -1,0 +1,50 @@
+<!-- Created with Jaspersoft Studio version 7.0.3.final using JasperReports Library version 7.0.3-41034ca841d452f3305ba55b9042260aaa1ab5dd  -->
+<jasperReport name="plagas" language="java" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="22222222-2222-2222-2222-222222222222">
+	<parameter name="LOGO_ICA" class="java.lang.String"/>
+	<query language="SQL"><![CDATA[SELECT
+            ID_PLAGA,
+            NOMBRE_COMUN,
+            NOMBRE_CIENTIFICO,
+            TIPO_PLAGA
+        FROM ADMINICA.PLAGA
+        ORDER BY NOMBRE_COMUN]]></query>
+	<field name="ID_PLAGA" class="java.lang.String"/>
+	<field name="NOMBRE_COMUN" class="java.lang.String"/>
+	<field name="NOMBRE_CIENTIFICO" class="java.lang.String"/>
+	<field name="TIPO_PLAGA" class="java.lang.String"/>
+	<title height="60" splitType="Stretch">
+		<element kind="staticText" uuid="22222222-2222-2222-2222-222222222223" x="0" y="10" width="555" height="24" fontSize="16.0" bold="true" hTextAlign="Center">
+			<text><![CDATA[Listado de plagas registradas]]></text>
+		</element>
+	</title>
+	<columnHeader height="20" splitType="Stretch">
+		<element kind="staticText" uuid="22222222-2222-2222-2222-222222222224" x="0" y="0" width="70" height="20" bold="true">
+			<text><![CDATA[ID]]></text>
+		</element>
+		<element kind="staticText" uuid="22222222-2222-2222-2222-222222222225" x="70" y="0" width="160" height="20" bold="true">
+			<text><![CDATA[Nombre común]]></text>
+		</element>
+		<element kind="staticText" uuid="22222222-2222-2222-2222-222222222226" x="230" y="0" width="200" height="20" bold="true">
+			<text><![CDATA[Nombre científico]]></text>
+		</element>
+		<element kind="staticText" uuid="22222222-2222-2222-2222-222222222227" x="430" y="0" width="125" height="20" bold="true">
+			<text><![CDATA[Tipo de plaga]]></text>
+		</element>
+	</columnHeader>
+	<detail>
+		<band height="18" splitType="Stretch">
+			<element kind="textField" uuid="22222222-2222-2222-2222-222222222228" x="0" y="0" width="70" height="18">
+				<expression><![CDATA[$F{ID_PLAGA}]]></expression>
+			</element>
+			<element kind="textField" uuid="22222222-2222-2222-2222-222222222229" x="70" y="0" width="160" height="18">
+				<expression><![CDATA[$F{NOMBRE_COMUN}]]></expression>
+			</element>
+			<element kind="textField" uuid="22222222-2222-2222-2222-22222222222a" x="230" y="0" width="200" height="18">
+				<expression><![CDATA[$F{NOMBRE_CIENTIFICO}]]></expression>
+			</element>
+			<element kind="textField" uuid="22222222-2222-2222-2222-22222222222b" x="430" y="0" width="125" height="18">
+				<expression><![CDATA[$F{TIPO_PLAGA}]]></expression>
+			</element>
+		</band>
+	</detail>
+</jasperReport>

@@ -21,6 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import modelo.reportes.ReporteUtil;
+import java.io.File;
+
 /**
  * Gestión de inspecciones fitosanitarias.
  *
@@ -44,9 +47,8 @@ public class InspeccionForm extends JDialog {
     private final JTextField txtCultivo         = new JTextField();
 
     // Campos numéricos/texto
-    private final JTextField txtPorcentaje = new JTextField(); // solo lectura
-
-    private final JTextField txtTotalPlantas      = new JTextField();
+    private final JTextField txtPorcentaje       = new JTextField(); // solo lectura
+    private final JTextField txtTotalPlantas     = new JTextField();
     private final JTextField txtPlantasAfectadas = new JTextField();
     private final JTextField txtEstadoFeno       = new JTextField();
     private final JTextArea  txtObs              = new JTextArea(3, 20);
@@ -69,6 +71,7 @@ public class InspeccionForm extends JDialog {
     private JButton btnNuevo;
     private JButton btnEliminar;
     private JButton btnGuardar;
+    private JButton btnExportarPdf; // botón para informe
 
     public InspeccionForm(Frame owner) {
         super(owner, "Gestión de inspecciones", true);
@@ -106,6 +109,7 @@ public class InspeccionForm extends JDialog {
                 "Registra y consulta inspecciones realizadas en los lotes."
         );
 
+        // ===== FORMULARIO SUPERIOR =====
         JPanel form = new JPanel(new GridBagLayout());
         form.setBorder(new EmptyBorder(12, 12, 12, 12));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -123,6 +127,7 @@ public class InspeccionForm extends JDialog {
         JLabel lblAfect   = new JLabel("Plantas afectadas");
         JLabel lblFeno    = new JLabel("Estado fenológico");
         JLabel lblObs     = new JLabel("Observaciones");
+        JLabel lblPorc    = new JLabel("% infestación");
 
         // Lote
         gbc.gridx = 0; gbc.gridy = row;
@@ -131,8 +136,8 @@ public class InspeccionForm extends JDialog {
         gbc.weightx = 0.7;
         form.add(cbLote, gbc);
 
-        row++;
         // Cultivo (solo lectura)
+        row++;
         txtCultivo.setEditable(false);
         gbc.gridx = 0; gbc.gridy = row;
         gbc.weightx = 0.3;
@@ -141,8 +146,8 @@ public class InspeccionForm extends JDialog {
         gbc.weightx = 0.7;
         form.add(txtCultivo, gbc);
 
-        row++;
         // Técnico
+        row++;
         gbc.gridx = 0; gbc.gridy = row;
         gbc.weightx = 0.3;
         form.add(lblTec, gbc);
@@ -150,8 +155,8 @@ public class InspeccionForm extends JDialog {
         gbc.weightx = 0.7;
         form.add(cbTecnico, gbc);
 
-        row++;
         // Total plantas
+        row++;
         gbc.gridx = 0; gbc.gridy = row;
         gbc.weightx = 0.3;
         form.add(lblTotal, gbc);
@@ -159,8 +164,8 @@ public class InspeccionForm extends JDialog {
         gbc.weightx = 0.7;
         form.add(txtTotalPlantas, gbc);
 
-        row++;
         // Plantas afectadas
+        row++;
         gbc.gridx = 0; gbc.gridy = row;
         gbc.weightx = 0.3;
         form.add(lblAfect, gbc);
@@ -168,8 +173,8 @@ public class InspeccionForm extends JDialog {
         gbc.weightx = 0.7;
         form.add(txtPlantasAfectadas, gbc);
 
-        row++;
         // Estado fenológico
+        row++;
         gbc.gridx = 0; gbc.gridy = row;
         gbc.weightx = 0.3;
         form.add(lblFeno, gbc);
@@ -177,8 +182,8 @@ public class InspeccionForm extends JDialog {
         gbc.weightx = 0.7;
         form.add(txtEstadoFeno, gbc);
 
-        row++;
         // Observaciones
+        row++;
         gbc.gridx = 0; gbc.gridy = row;
         gbc.weightx = 0.3;
         form.add(lblObs, gbc);
@@ -186,21 +191,19 @@ public class InspeccionForm extends JDialog {
         gbc.weightx = 0.7;
         gbc.fill = GridBagConstraints.BOTH;
         form.add(new JScrollPane(txtObs), gbc);
-       
-        
-        JLabel lblPorc  = new JLabel("% infestación");
 
+        // % Infestación (solo lectura)
         row++;
         gbc.gridx = 0; gbc.gridy = row;
         gbc.weightx = 0.3;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         form.add(lblPorc, gbc);
         gbc.gridx = 1;
         gbc.weightx = 0.7;
         form.add(txtPorcentaje, gbc);
         txtPorcentaje.setEditable(false);
 
-
-        // Listeners:
+        // Listeners combos
         cbTecnico.addActionListener(e -> onCambioTecnico());
         cbLote.addActionListener(e -> actualizarCultivoDesdeLoteSeleccionado());
 
@@ -239,10 +242,14 @@ public class InspeccionForm extends JDialog {
         btnGuardar = UIStyle.primaryButton("Guardar inspección");
         btnGuardar.addActionListener(e -> guardar());
 
+        btnExportarPdf = UIStyle.primaryButton("Exportar informe PDF");
+        btnExportarPdf.addActionListener(e -> exportarInformeSeleccionado());
+
         footer.add(btnNuevo);
         footer.add(btnEliminar);
         footer.add(btnCerrar);
         footer.add(btnGuardar);
+        footer.add(btnExportarPdf);
 
         root.add(header, BorderLayout.NORTH);
         root.add(center, BorderLayout.CENTER);
@@ -252,60 +259,60 @@ public class InspeccionForm extends JDialog {
     }
 
     private void aplicarPermisosPorRol() {
+        if (rolActual != RolUsuario.TECNICO) {
+            // Admin y productor: solo consulta
+            cbLote.setEnabled(false);
+            cbTecnico.setEnabled(rolActual == RolUsuario.ADMIN);
 
-    if (rolActual != RolUsuario.TECNICO) {
-        // Admin y productor: solo consulta
-        cbLote.setEnabled(false);
-        cbTecnico.setEnabled(rolActual == RolUsuario.ADMIN);
+            txtTotalPlantas.setEditable(false);
+            txtPlantasAfectadas.setEditable(false);
+            txtEstadoFeno.setEditable(false);
+            txtObs.setEditable(false);
 
-        txtTotalPlantas.setEditable(false);
-        txtPlantasAfectadas.setEditable(false);
-        txtEstadoFeno.setEditable(false);
-        txtObs.setEditable(false);
+            btnNuevo.setEnabled(false);
+            btnGuardar.setEnabled(false);
+            btnEliminar.setEnabled(false);
 
-        btnNuevo.setEnabled(false);
-        btnGuardar.setEnabled(false);
-        btnEliminar.setEnabled(false);
-    } else {
-        // Técnico
-        cbTecnico.setEnabled(false);
-        btnEliminar.setEnabled(false);
-    }
+            // OJO: btnExportarPdf se deja habilitado para que puedan descargar
+        } else {
+            // Técnico
+            cbTecnico.setEnabled(false);
+            btnEliminar.setEnabled(false);
+            // btnExportarPdf también habilitado
+        }
 
-    // ========================== ALERTA PARA PRODUCTOR ==========================
-    if (rolActual == RolUsuario.PRODUCTOR) {
+        // ========================== ALERTA PARA PRODUCTOR ==========================
+        if (rolActual == RolUsuario.PRODUCTOR) {
+            tblInspecciones.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+                @Override
+                public Component getTableCellRendererComponent(
+                        JTable table, Object value, boolean isSelected,
+                        boolean hasFocus, int row, int column) {
 
-        tblInspecciones.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(
-                    JTable table, Object value, boolean isSelected,
-                    boolean hasFocus, int row, int column) {
+                    Component c = super.getTableCellRendererComponent(
+                            table, value, isSelected, hasFocus, row, column);
 
-                Component c = super.getTableCellRendererComponent(
-                        table, value, isSelected, hasFocus, row, column);
-
-                Object val = table.getValueAt(row, 6); // columna % Inf.
-                double p = 0;
-                if (val != null && !val.toString().isBlank()) {
-                    try { 
-                        p = Double.parseDouble(val.toString()); 
-                    } catch (NumberFormatException ignored) {}
-                }
-
-                if (!isSelected) {
-                    if (p >= 30) {
-                        c.setBackground(new Color(255, 220, 220)); // rojito alerta
-                    } else {
-                        c.setBackground(Color.WHITE);
+                    Object val = table.getValueAt(row, 6); // columna % Inf.
+                    double p = 0;
+                    if (val != null && !val.toString().isBlank()) {
+                        try {
+                            p = Double.parseDouble(val.toString());
+                        } catch (NumberFormatException ignored) {}
                     }
+
+                    if (!isSelected) {
+                        if (p >= 30) {
+                            c.setBackground(new Color(255, 220, 220)); // rojito alerta
+                        } else {
+                            c.setBackground(Color.WHITE);
+                        }
+                    }
+
+                    return c;
                 }
-
-                return c;
-            }
-        });
+            });
+        }
     }
-}
-
 
     private void cargarCombos() {
         try {
@@ -449,8 +456,8 @@ public class InspeccionForm extends JDialog {
 
         txtTotalPlantas.setText(String.valueOf(tableModel.getValueAt(row, 4)));
         txtPlantasAfectadas.setText(String.valueOf(tableModel.getValueAt(row, 5)));
-        // Si decides mostrar estado fenológico en la tabla, ajústalo aquí
-        txtEstadoFeno.setText("");
+        txtPorcentaje.setText(String.valueOf(tableModel.getValueAt(row, 6)));
+        txtEstadoFeno.setText(""); // si luego lo agregas a la tabla, actualizas esto
         txtObs.setText(String.valueOf(tableModel.getValueAt(row, 7)));
     }
 
@@ -474,80 +481,79 @@ public class InspeccionForm extends JDialog {
         txtPlantasAfectadas.setText("");
         txtEstadoFeno.setText("");
         txtObs.setText("");
+        txtPorcentaje.setText("");
         tblInspecciones.clearSelection();
         actualizarCultivoDesdeLoteSeleccionado();
     }
 
     private void guardar() {
-    // Solo el técnico puede guardar
-    if (rolActual != RolUsuario.TECNICO) return;
+        // Solo el técnico puede guardar
+        if (rolActual != RolUsuario.TECNICO) return;
 
-    try {
-        ComboItem loteItem = (ComboItem) cbLote.getSelectedItem();
-        ComboItem tecItem  = (ComboItem) cbTecnico.getSelectedItem();
+        try {
+            ComboItem loteItem = (ComboItem) cbLote.getSelectedItem();
+            ComboItem tecItem  = (ComboItem) cbTecnico.getSelectedItem();
 
-        if (loteItem == null) throw new Exception("Seleccione un lote.");
-        if (tecItem == null) throw new Exception("No se encontró el técnico.");
+            if (loteItem == null) throw new Exception("Seleccione un lote.");
+            if (tecItem == null) throw new Exception("No se encontró el técnico.");
 
-        // ===== Leer y validar números =====
-        String totalStr  = txtTotalPlantas.getText().trim();
-        String afectStr  = txtPlantasAfectadas.getText().trim();
+            // ===== Leer y validar números =====
+            String totalStr  = txtTotalPlantas.getText().trim();
+            String afectStr  = txtPlantasAfectadas.getText().trim();
 
-        if (totalStr.isEmpty() || afectStr.isEmpty()) {
-            throw new Exception("Debe registrar el total de plantas y las plantas afectadas.");
+            if (totalStr.isEmpty() || afectStr.isEmpty()) {
+                throw new Exception("Debe registrar el total de plantas y las plantas afectadas.");
+            }
+
+            int total   = Integer.parseInt(totalStr);
+            int afect   = Integer.parseInt(afectStr);
+
+            if (total <= 0) {
+                throw new Exception("El total de plantas debe ser mayor que cero.");
+            }
+            if (afect < 0 || afect > total) {
+                throw new Exception("Las plantas afectadas deben estar entre 0 y el total de plantas.");
+            }
+
+            // ===== Calcular porcentaje de infestación =====
+            double porcentaje = (afect * 100.0) / total;
+            txtPorcentaje.setText(String.format("%.2f", porcentaje));
+
+            // ===== Armar entidad =====
+            Inspeccion i = new Inspeccion();
+            i.setIdInspeccion(idInspeccionSeleccionada);
+            i.setIdLote(loteItem.getId());
+            i.setIdTecnico(tecItem.getId());
+            i.setFechaInspeccion(LocalDate.now());
+            i.setTotalPlantas(total);
+            i.setPlantasAfectadas(afect);
+            i.setEstadoFenologico(txtEstadoFeno.getText().trim());
+            i.setPorcentajeInfestacion(porcentaje);
+            i.setObservaciones(txtObs.getText().trim());
+
+            // ===== Insert / update =====
+            if (idInspeccionSeleccionada == null) {
+                controller.registrarInspeccion(i);
+                JOptionPane.showMessageDialog(this, "Inspección registrada.");
+            } else {
+                controller.actualizarInspeccion(i);
+                JOptionPane.showMessageDialog(this, "Inspección actualizada.");
+            }
+
+            cargarTabla();
+
+        } catch (NumberFormatException nfe) {
+            JOptionPane.showMessageDialog(this,
+                    "Total de plantas y plantas afectadas deben ser números enteros.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
-
-        int total   = Integer.parseInt(totalStr);
-        int afect   = Integer.parseInt(afectStr);
-
-        if (total <= 0) {
-            throw new Exception("El total de plantas debe ser mayor que cero.");
-        }
-        if (afect < 0 || afect > total) {
-            throw new Exception("Las plantas afectadas deben estar entre 0 y el total de plantas.");
-        }
-
-        // ===== Calcular porcentaje de infestación =====
-        double porcentaje = (afect * 100.0) / total;
-        // Mostrarlo en la caja (solo lectura)
-        txtPorcentaje.setText(String.format("%.2f", porcentaje));
-
-        // ===== Armar entidad =====
-        Inspeccion i = new Inspeccion();
-        i.setIdInspeccion(idInspeccionSeleccionada);
-        i.setIdLote(loteItem.getId());
-        i.setIdTecnico(tecItem.getId());
-        i.setFechaInspeccion(LocalDate.now());
-        i.setTotalPlantas(total);
-        i.setPlantasAfectadas(afect);
-        i.setEstadoFenologico(txtEstadoFeno.getText().trim());
-        i.setPorcentajeInfestacion(porcentaje);
-        i.setObservaciones(txtObs.getText().trim());
-
-        // ===== Insert / update =====
-        if (idInspeccionSeleccionada == null) {
-            controller.registrarInspeccion(i);
-            JOptionPane.showMessageDialog(this, "Inspección registrada.");
-        } else {
-            controller.actualizarInspeccion(i);
-            JOptionPane.showMessageDialog(this, "Inspección actualizada.");
-        }
-
-        cargarTabla();
-
-    } catch (NumberFormatException nfe) {
-        JOptionPane.showMessageDialog(this,
-                "Total de plantas y plantas afectadas deben ser números enteros.",
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-    } catch (Exception ex) {
-        JOptionPane.showMessageDialog(this,
-                ex.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
     }
-}
-
 
     private void eliminarSeleccionada() {
         // No permitido; simplemente avisamos
@@ -555,6 +561,45 @@ public class InspeccionForm extends JDialog {
                 "No está permitido eliminar inspecciones.",
                 "Aviso",
                 JOptionPane.WARNING_MESSAGE);
+    }
+
+    private void exportarInformeSeleccionado() {
+        int row = tblInspecciones.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this,
+                    "Seleccione una inspección en la tabla.",
+                    "Aviso",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String idInspeccion = (String) tableModel.getValueAt(row, 0); // columna ID
+
+        // Diálogo para elegir dónde guardar
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Guardar informe de inspección");
+        chooser.setSelectedFile(new File("informe_" + idInspeccion + ".pdf"));
+
+        int result = chooser.showSaveDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) {
+            return; // canceló
+        }
+
+        File destino = chooser.getSelectedFile();
+
+        try {
+            ReporteUtil.exportarInspeccionPdf(idInspeccion, destino.getAbsolutePath());
+            JOptionPane.showMessageDialog(this,
+                    "Informe generado correctamente:\n" + destino.getAbsolutePath(),
+                    "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error al generar el informe:\n" + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
     }
 
     // ----- Clase auxiliar ComboItem -----
@@ -572,5 +617,4 @@ public class InspeccionForm extends JDialog {
         @Override
         public String toString() { return label; }
     }
-    
 }

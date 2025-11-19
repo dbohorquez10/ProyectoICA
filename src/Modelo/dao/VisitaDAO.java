@@ -1,10 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-/*
- * DAO para VISITA.
- */
 package modelo.dao;
 
 import modelo.ConexionBD;
@@ -14,29 +7,30 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * DAO para VISITA.
+ */
 public class VisitaDAO {
 
-    private static final String OWNER = "ADMINICA";
-    private static final String TABLE = OWNER + ".VISITA";
-    // OJO: ajusta el nombre de la secuencia al real en tu BD
-    private static final String SEQ   = OWNER + ".SEQ_VISITA";
+    private static final String OWNER      = "ADMINICA";
+    private static final String TABLE      = OWNER + ".VISITA";
+    private static final String SEQ        = OWNER + ".SEQ_VISITA";
+    private static final String ASIG_TABLE = OWNER + ".ASIGNACION_LOTE";
 
     // =========================================================
     //  INSERT
     // =========================================================
 
-    public void insertarVisita(Visita v) throws SQLException {
-
+    /**
+     * Insertar visita usando una conexión externa (para transacciones).
+     */
+    public void insertarVisita(Visita v, Connection cn) throws SQLException {
         String sql = "INSERT INTO " + TABLE + " (" +
                 "ID_VISITA, ID_PRODUCTOR, ID_LOTE, ID_TECNICO, " +
                 "FECHA_SOLICITUD, FECHA_VISITA, MOTIVO, ESTADO, OBSERVACIONES) " +
                 "VALUES ('VIS-' || " + SEQ + ".NEXTVAL, ?, ?, ?, SYSDATE, ?, ?, ?, ?)";
 
-        // Para evitar problemas de permisos sobre la secuencia / triggers,
-        // uso la conexión del dueño del esquema (ADMINICA)
-        try (Connection cn = ConexionBD.getAppConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
-
+        try (PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, v.getIdProductor());
             ps.setString(2, v.getIdLote());
             ps.setString(3, v.getIdTecnico());
@@ -55,11 +49,21 @@ public class VisitaDAO {
         }
     }
 
+    /**
+     * Insertar visita abriendo/cerrando su propia conexión (uso genérico).
+     */
+    public void insertarVisita(Visita v) throws SQLException {
+        try (Connection cn = ConexionBD.getAppConnection()) {
+            insertarVisita(v, cn);
+        }
+    }
+
     // =========================================================
     //  UPDATE
     // =========================================================
 
-    public void actualizarVisita(Visita v) throws SQLException {
+    /** Update usando conexión externa (para transacciones). */
+    public void actualizarVisita(Visita v, Connection cn) throws SQLException {
         String sql = "UPDATE " + TABLE + " SET " +
                 "ID_TECNICO = ?, " +
                 "FECHA_VISITA = ?, " +
@@ -68,9 +72,7 @@ public class VisitaDAO {
                 "OBSERVACIONES = ? " +
                 "WHERE ID_VISITA = ?";
 
-        try (Connection cn = ConexionBD.getAppConnection();
-             PreparedStatement ps = cn.prepareStatement(sql)) {
-
+        try (PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, v.getIdTecnico());
 
             if (v.getFechaVisita() != null) {
@@ -85,6 +87,13 @@ public class VisitaDAO {
             ps.setString(6, v.getIdVisita());
 
             ps.executeUpdate();
+        }
+    }
+
+    /** Update “normal” abriendo su propia conexión. */
+    public void actualizarVisita(Visita v) throws SQLException {
+        try (Connection cn = ConexionBD.getAppConnection()) {
+            actualizarVisita(v, cn);
         }
     }
 
@@ -189,30 +198,51 @@ public class VisitaDAO {
         v.setObservaciones(rs.getString("OBSERVACIONES"));
         return v;
     }
-        /**
-     * Marca como REALIZADA las visitas ASIGNADAS para el lote y técnico indicados
-     * y desasigna al técnico (ID_TECNICO = NULL).
-     * Se llama cuando el técnico registra una inspección.
+
+    // =========================================================
+    //  MARCAR REALIZADA POR INSPECCIÓN
+    // =========================================================
+
+    /**
+     * Usa la MISMA conexión que viene del controlador
+     * (misma transacción que la inspección).
+     */
+    public void marcarRealizadaPorInspeccion(String idLote,
+                                             String idTecnico,
+                                             Connection cn) throws SQLException {
+
+        String sqlVisita =
+                "UPDATE " + TABLE + " " +
+                "   SET ESTADO = 'REALIZADA', " +
+                "       ID_TECNICO = NULL " +
+                " WHERE ID_LOTE = ? " +
+                "   AND ID_TECNICO = ? " +
+                "   AND ESTADO = 'ASIGNADA'";
+
+        String sqlAsig =
+                "DELETE FROM " + ASIG_TABLE + " " +
+                " WHERE ID_LOTE = ? " +
+                "   AND ID_TECNICO = ?";
+
+        try (PreparedStatement ps1 = cn.prepareStatement(sqlVisita);
+             PreparedStatement ps2 = cn.prepareStatement(sqlAsig)) {
+
+            ps1.setString(1, idLote);
+            ps1.setString(2, idTecnico);
+            ps1.executeUpdate();
+
+            ps2.setString(1, idLote);
+            ps2.setString(2, idTecnico);
+            ps2.executeUpdate();
+        }
+    }
+
+    /**
+     * Versión simple que abre su propia conexión (por si la necesitas en otro lado).
      */
     public void marcarRealizadaPorInspeccion(String idLote, String idTecnico) throws SQLException {
-    String sql =
-            "UPDATE " + OWNER + ".VISITA " +
-            "   SET ESTADO = 'REALIZADA', " +
-            "       ID_TECNICO = NULL " +   // lo desasignamos para el trigger de 5 lotes
-            " WHERE ID_LOTE = ? " +
-            "   AND ID_TECNICO = ? " +
-            "   AND ESTADO = 'ASIGNADA'";
-
-    try (Connection cn = ConexionBD.getConexionActual();
-         PreparedStatement ps = cn.prepareStatement(sql)) {
-
-        ps.setString(1, idLote);
-        ps.setString(2, idTecnico);
-        ps.executeUpdate();
+        try (Connection cn = ConexionBD.getConexionActual()) {
+            marcarRealizadaPorInspeccion(idLote, idTecnico, cn);
+        }
     }
 }
-
-
-}
-
-

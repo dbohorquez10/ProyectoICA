@@ -16,6 +16,9 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.time.LocalDate;
 import java.util.List;
+import java.io.File;
+
+import modelo.reportes.ReporteUtil;
 
 /**
  * Gestión de lotes:
@@ -29,8 +32,11 @@ import java.util.List;
 public class LoteForm extends JDialog {
 
     // Combos en vez de texto
-    private final JComboBox<CultivoItem> cbCultivo     = new JComboBox<>();
-    private final JComboBox<ProductorItem> cbProductor = new JComboBox<>();
+    private final JComboBox<CultivoItem>     cbCultivo    = new JComboBox<>();
+    private final JComboBox<ProductorItem>   cbProductor  = new JComboBox<>();
+
+    // Botón reporte
+    private JButton btnExportarPdf;
 
     // Campos del formulario
     private final JTextField txtArea         = new JTextField();
@@ -44,9 +50,9 @@ public class LoteForm extends JDialog {
     private final LoteController controller = new LoteController();
 
     // Contexto de sesión
-    private boolean modoProductor = false;
-    private Productor productorActual = null;   // productor logueado (si aplica)
-    private String idLoteSeleccionado = null;
+    private boolean   modoProductor      = false;
+    private Productor productorActual    = null;   // productor logueado (si aplica)
+    private String    idLoteSeleccionado = null;
 
     public LoteForm(Frame owner) {
         super(owner, "Gestión de lotes", true);
@@ -170,6 +176,10 @@ public class LoteForm extends JDialog {
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         footer.setOpaque(false);
 
+        // Reporte
+        btnExportarPdf = UIStyle.primaryButton("Exportar informe PDF");
+        btnExportarPdf.addActionListener(e -> exportarReporteProductor());
+
         JButton btnNuevo = UIStyle.ghostButton("Nuevo");
         btnNuevo.addActionListener(e -> limpiarFormulario());
 
@@ -183,6 +193,7 @@ public class LoteForm extends JDialog {
         JButton btnGuardar = UIStyle.primaryButton("Guardar lote");
         btnGuardar.addActionListener(e -> guardar());
 
+        footer.add(btnExportarPdf);
         footer.add(btnNuevo);
         footer.add(btnEliminar);
         footer.add(btnCerrar);
@@ -225,11 +236,10 @@ public class LoteForm extends JDialog {
                     cbProductor.setSelectedIndex(0);
                     cbProductor.setEnabled(false); // bloqueado, no puede cambiarse
                 } else {
-                    // No se pudo resolver su productor -> mostramos combo vacío pero bloqueado
                     cbProductor.setEnabled(false);
                 }
             } else {
-                // ADMIN (y en el futuro TECNICO si aplica): todos los productores
+                // ADMIN (y futuro TECNICO): todos los productores
                 List<Productor> productores = prodDAO.listarProductores();
                 for (Productor p : productores) {
                     cbProductor.addItem(new ProductorItem(
@@ -258,11 +268,11 @@ public class LoteForm extends JDialog {
             for (Lote l : lista) {
                 tableModel.addRow(new Object[] {
                         l.getIdLote(),
-                        l.getIdCultivo(),     // puedes sustituir por nombre si quieres
+                        l.getIdCultivo(),
                         l.getIdProductor(),
                         l.getAreaHectareas(),
                         l.getNumeroLote(),
-                        l.getFechaSiembra() != null ? l.getFechaSiembra().toString() : "",
+                        l.getFechaSiembra()     != null ? l.getFechaSiembra().toString()     : "",
                         l.getFechaEliminacion() != null ? l.getFechaEliminacion().toString() : ""
                 });
             }
@@ -301,7 +311,6 @@ public class LoteForm extends JDialog {
         }
 
         if (modoProductor) {
-            // ya está fijo en cargarCombos()
             cbProductor.setEnabled(false);
         } else {
             if (cbProductor.getItemCount() > 0) {
@@ -359,10 +368,9 @@ public class LoteForm extends JDialog {
             LocalDate fechaSiembra = LocalDate.parse(txtFechaSiembra.getText().trim());
 
             String idCultivo   = cultivoSel.idCultivo;
-            String idProductor = productorSel.idProductor; // sigue siendo PROD-#, aunque veas la cédula
+            String idProductor = productorSel.idProductor; // sigue siendo PROD-#
 
             if (idLoteSeleccionado == null) {
-                // Nuevo lote
                 controller.registrarLote(
                         idCultivo,
                         idProductor,
@@ -372,7 +380,6 @@ public class LoteForm extends JDialog {
                 );
                 JOptionPane.showMessageDialog(this, "Lote registrado correctamente.");
             } else {
-                // Actualizar lote existente
                 Lote l = new Lote();
                 l.setIdLote(idLoteSeleccionado);
                 l.setIdCultivo(idCultivo);
@@ -430,6 +437,50 @@ public class LoteForm extends JDialog {
         }
     }
 
+    // ================= REPORTE PRODUCTOR + LOTES =================
+
+    /**
+     * Usa la fila seleccionada de la tabla de lotes para tomar el ID_PRODUCTOR
+     * y genera el PDF "Productor + sus lotes".
+     */
+    private void exportarReporteProductor() {
+        int row = tblLotes.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this,
+                    "Seleccione un lote en la tabla (se usará su productor).",
+                    "Aviso",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Columna 2 de la tabla = ID_PRODUCTOR (PROD-#)
+        String idProductor = (String) tableModel.getValueAt(row, 2);
+
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Guardar informe de productor y lotes");
+        chooser.setSelectedFile(new File("productor_" + idProductor + ".pdf"));
+
+        int result = chooser.showSaveDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        File destino = chooser.getSelectedFile();
+        try {
+            ReporteUtil.exportarProductorLotesPdf(idProductor, destino.getAbsolutePath());
+            JOptionPane.showMessageDialog(this,
+                    "Informe generado correctamente:\n" + destino.getAbsolutePath(),
+                    "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error al generar el informe:\n" + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+
     // ================= CLASES AUXILIARES PARA LOS COMBOS =================
 
     private static class CultivoItem {
@@ -443,7 +494,6 @@ public class LoteForm extends JDialog {
 
         @Override
         public String toString() {
-            // Solo mostramos el nombre del cultivo
             return nombreComun;
         }
     }
@@ -461,7 +511,6 @@ public class LoteForm extends JDialog {
 
         @Override
         public String toString() {
-            // Lo que ve el usuario: "cédula - nombre"
             return cedula + " - " + nombre;
         }
     }
